@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}Adjust Attendance Record{% endblock %}
+{% block page_title %}Adjust Attendance Record{% endblock %}
+{% block page_subtitle %}Administrative override with mandatory security audit logging{% endblock %}
+
+{% block content %}
+<div style="max-width: 680px; margin: 0 auto;">
+  <div class="card">
+    <div class="card-header">
+      <h3>
+        <i class="fa-solid fa-pen-to-square" style="color: var(--primary-600);"></i>
+        <span>Edit Punch for {{ record.employee.full_name }} ({{ record.date|date:"M d, Y" }})</span>
+      </h3>
+      <a href="{% url 'attendance_logs' %}" class="btn btn-outline btn-sm">
+        <i class="fa-solid fa-arrow-left"></i> Back to Logs
+      </a>
+    </div>
+    <div class="card-body">
+      <div style="background: var(--info-50); padding: 14px 18px; border-radius: var(--radius-md); border: 1px solid var(--primary-200); margin-bottom: 24px; font-size: 13px; color: var(--info-600); display: flex; align-items: flex-start; gap: 12px;">
+        <i class="fa-solid fa-shield-halved" style="font-size: 18px; margin-top: 2px;"></i>
+        <div>
+          <b>Security Audit Policy:</b> Any manual adjustments to recorded time stamps or statuses are permanently saved in the <b>Security Audit Trail</b> with your administrator username, IP address, and timestamp.
+        </div>
+      </div>
+
+      <form method="POST">
+        {% csrf_token %}
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label class="form-label">Time In</label>
+            {{ form.time_in }}
+            {% if form.time_in.errors %}<span style="color: var(--danger-500); font-size: 12px;">{{ form.time_in.errors }}</span>{% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Time Out</label>
+            {{ form.time_out }}
+            {% if form.time_out.errors %}<span style="color: var(--danger-500); font-size: 12px;">{{ form.time_out.errors }}</span>{% endif %}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Attendance Status</label>
+          {{ form.status }}
+          {% if form.status.errors %}<span style="color: var(--danger-500); font-size: 12px;">{{ form.status.errors }}</span>{% endif %}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Reason / Justification * (Mandatory for Audit Trail)</label>
+          {{ form.notes }}
+          {% if form.notes.errors %}<span style="color: var(--danger-500); font-size: 12px;">{{ form.notes.errors }}</span>{% endif %}
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-top: 28px;">
+          <button type="submit" class="btn btn-primary btn-lg">
+            <i class="fa-solid fa-check"></i> Save Adjustments
+          </button>
+          <a href="{% url 'attendance_logs' %}" class="btn btn-outline btn-lg">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

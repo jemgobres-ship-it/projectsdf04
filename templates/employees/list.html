@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+{% block title %}Employee Directory{% endblock %}
+{% block page_title %}Employee Directory (CRUD){% endblock %}
+{% block page_subtitle %}Manage staff records, work shifts, department assignments, and user accounts{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'employee_create' %}" class="btn btn-primary btn-sm">
+  <i class="fa-solid fa-user-plus"></i> Add New Employee
+</a>
+{% endblock %}
+
+{% block content %}
+<!-- Search & Filter Controls -->
+<div class="card" style="margin-bottom: 24px;">
+  <div class="card-body" style="padding: 18px 24px;">
+    <form method="GET" style="display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end;">
+      <div style="flex: 2; min-width: 220px;">
+        <label class="form-label" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;">Search Directory</label>
+        <input type="text" name="q" value="{{ query }}" class="form-control" placeholder="Search by name, employee ID, username, or role..." style="padding: 8px 12px; font-size: 13px;">
+      </div>
+
+      <div style="flex: 1; min-width: 180px;">
+        <label class="form-label" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;">Department</label>
+        <select name="department" class="form-select" style="padding: 8px 12px; font-size: 13px;">
+          <option value="">All Departments</option>
+          {% for dept in departments %}
+            <option value="{{ dept.id }}" {% if selected_dept == dept.id %}selected{% endif %}>{{ dept.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div style="display: flex; gap: 8px;">
+        <button type="submit" class="btn btn-primary" style="padding: 8px 18px;">
+          <i class="fa-solid fa-magnifying-glass"></i> Search
+        </button>
+        <a href="{% url 'employee_list' %}" class="btn btn-outline" style="padding: 8px 14px;">Reset</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Employee Directory Table Card -->
+<div class="card">
+  <div class="card-header">
+    <h3>
+      <i class="fa-solid fa-users" style="color: var(--primary-600);"></i>
+      <span>Enrolled Staff Directory ({{ employees|length }})</span>
+    </h3>
+  </div>
+
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Emp ID</th>
+          <th>Employee Details</th>
+          <th>Department</th>
+          <th>Designation</th>
+          <th>Shift Schedule</th>
+          <th>Contact</th>
+          <th>Status</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for emp in employees %}
+        <tr>
+          <td>
+            <span style="font-family: var(--font-mono); font-weight: 700; color: var(--primary-800); background: var(--primary-50); padding: 3px 8px; border-radius: 4px; border: 1px solid var(--primary-200); font-size: 12px;">
+              {{ emp.employee_id }}
+            </span>
+          </td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div class="user-avatar" style="width: 34px; height: 34px; font-size: 12px;">
+                {{ emp.full_name|slice:":1"|upper }}
+              </div>
+              <div>
+                <div style="font-weight: 700; color: var(--slate-900);">{{ emp.full_name }}</div>
+                <div style="font-size: 11.5px; color: var(--slate-400);">@{{ emp.username }} • {{ emp.email|default:"No email" }}</div>
+              </div>
+            </div>
+          </td>
+          <td><span style="color: var(--slate-700); font-weight: 500;">{{ emp.department }}</span></td>
+          <td><span style="color: var(--slate-600);">{{ emp.job_title }}</span></td>
+          <td>
+            <span style="font-size: 12.5px; font-weight: 600; color: var(--primary-600); font-family: var(--font-mono);">{{ emp.shift_display }}</span>
+            <div style="font-size: 11px; color: var(--slate-400);">Grace: {{ emp.grace_period_minutes }}m</div>
+          </td>
+          <td><span style="font-family: var(--font-mono); font-size: 12px; color: var(--slate-600);">{{ emp.contact_number|default:"-" }}</span></td>
+          <td>
+            {% if emp.is_active %}
+              <span class="badge badge-success"><span class="badge-dot"></span> Active</span>
+            {% else %}
+              <span class="badge badge-danger"><span class="badge-dot"></span> Inactive</span>
+            {% endif %}
+          </td>
+          <td style="text-align: right;">
+            <div style="display: inline-flex; gap: 6px;">
+              <a href="{% url 'employee_update' emp.id %}" class="btn btn-outline btn-sm" title="Edit Profile">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </a>
+              <a href="{% url 'export_pdf_dtr' %}?employee_id={{ emp.id }}" class="btn btn-outline btn-sm" title="Download DTR (PDF)" target="_blank">
+                <i class="fa-solid fa-file-pdf" style="color: var(--danger-500);"></i>
+              </a>
+              <a href="{% url 'employee_delete' emp.id %}" class="btn btn-outline btn-sm" title="Delete Employee" style="color: var(--danger-500);">
+                <i class="fa-solid fa-trash-can"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" style="text-align: center; padding: 44px; color: var(--slate-400);">
+            <i class="fa-solid fa-user-slash" style="font-size: 36px; margin-bottom: 10px; display: block; opacity: 0.5;"></i>
+            No employees found matching your criteria.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

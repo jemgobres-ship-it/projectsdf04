@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+
+{% block title %}Attendance Master Log{% endblock %}
+{% block page_title %}Attendance Master Log{% endblock %}
+{% block page_subtitle %}Audit and review workforce timekeeping telemetry, tardiness, and rendered hours{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'clock_terminal' %}" class="btn btn-primary btn-sm">
+  <i class="fa-solid fa-fingerprint"></i> Biometric Clock
+</a>
+<a href="{% url 'reports_index' %}" class="btn btn-outline btn-sm">
+  <i class="fa-solid fa-file-export"></i> Reports Center
+</a>
+{% endblock %}
+
+{% block content %}
+<!-- Modern Filter Controls Card -->
+<div class="card" style="margin-bottom: 24px;">
+  <div class="card-body" style="padding: 18px 24px;">
+    <form method="GET" style="display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end;">
+      <div style="flex: 1; min-width: 150px;">
+        <label class="form-label" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;">Start Date</label>
+        <input type="date" name="start_date" value="{{ start_date }}" class="form-control" style="padding: 8px 12px; font-size: 13px;">
+      </div>
+
+      <div style="flex: 1; min-width: 150px;">
+        <label class="form-label" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;">End Date</label>
+        <input type="date" name="end_date" value="{{ end_date }}" class="form-control" style="padding: 8px 12px; font-size: 13px;">
+      </div>
+
+      {% if is_admin %}
+      <div style="flex: 1.2; min-width: 170px;">
+        <label class="form-label" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;">Department</label>
+        <select name="department" class="form-select" style="padding: 8px 12px; font-size: 13px;">
+          <option value="">All Departments</option>
+          {% for dept in departments %}
+            <option value="{{ dept.id }}" {% if selected_dept == dept.id %}selected{% endif %}>{{ dept.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div style="flex: 1; min-width: 150px;">
+        <label class="form-label" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;">Status</label>
+        <select name="status" class="form-select" style="padding: 8px 12px; font-size: 13px;">
+          <option value="">All Statuses</option>
+          <option value="PRESENT" {% if selected_status == 'PRESENT' %}selected{% endif %}>Present (On-Time)</option>
+          <option value="LATE" {% if selected_status == 'LATE' %}selected{% endif %}>Late Arrival</option>
+          <option value="HALF_DAY" {% if selected_status == 'HALF_DAY' %}selected{% endif %}>Half Day</option>
+          <option value="ABSENT" {% if selected_status == 'ABSENT' %}selected{% endif %}>Absent</option>
+        </select>
+      </div>
+      {% endif %}
+
+      <div style="display: flex; gap: 8px;">
+        <button type="submit" class="btn btn-primary" style="padding: 8px 18px;">
+          <i class="fa-solid fa-filter"></i> Apply Filter
+        </button>
+        <a href="{% url 'attendance_logs' %}" class="btn btn-outline" style="padding: 8px 14px;">
+          Reset
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Attendance Master Records Table Card -->
+<div class="card">
+  <div class="card-header">
+    <h3>
+      <i class="fa-solid fa-list-check" style="color: var(--primary-600);"></i>
+      <span>Attendance Records ({{ logs|length }} Entries)</span>
+    </h3>
+    <div style="display: flex; gap: 10px;">
+      <a href="{% url 'export_csv' %}?start_date={{ start_date }}&end_date={{ end_date }}&department={{ selected_dept|default:'' }}&status={{ selected_status|default:'' }}" class="btn btn-outline btn-sm">
+        <i class="fa-solid fa-file-csv" style="color: var(--success-600);"></i> CSV Export (Pandas)
+      </a>
+      <a href="{% url 'export_pdf_dtr' %}?start_date={{ start_date }}&end_date={{ end_date }}" class="btn btn-outline btn-sm" target="_blank">
+        <i class="fa-solid fa-file-pdf" style="color: var(--danger-500);"></i> PDF DTR (ReportLab)
+      </a>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          {% if is_admin %}
+            <th>Employee</th>
+            <th>Department</th>
+          {% endif %}
+          <th>Date</th>
+          <th>Time In</th>
+          <th>Time Out</th>
+          <th>Status</th>
+          <th>Late</th>
+          <th>Rendered Hours</th>
+          <th>Overtime</th>
+          {% if is_admin %}
+            <th style="text-align: right;">Action</th>
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+        <tr>
+          {% if is_admin %}
+            <td>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div class="user-avatar" style="width: 32px; height: 32px; font-size: 11px;">
+                  {{ log.employee_name|slice:":1"|upper }}
+                </div>
+                <div>
+                  <div style="font-weight: 600; color: var(--slate-900);">{{ log.employee_name }}</div>
+                  <div style="font-size: 11px; color: var(--slate-400); font-family: var(--font-mono);">{{ log.employee_id }}</div>
+                </div>
+              </div>
+            </td>
+            <td><span style="color: var(--slate-600);">{{ log.department }}</span></td>
+          {% endif %}
+          <td><b style="color: var(--slate-900);">{{ log.formatted_date }}</b></td>
+          <td><span style="font-family: var(--font-mono); font-weight: 700; color: var(--slate-800);">{{ log.formatted_time_in }}</span></td>
+          <td><span style="font-family: var(--font-mono); color: var(--slate-600);">{{ log.formatted_time_out }}</span></td>
+          <td>
+            <span class="badge {{ log.status_badge_class }}">
+              <span class="badge-dot"></span>
+              {{ log.status }}
+            </span>
+          </td>
+          <td>
+            {% if log.late_minutes > 0 %}
+              <span style="color: var(--danger-600); font-weight: 700; font-size: 12.5px;">{{ log.late_minutes }}m</span>
+            {% else %}
+              <span style="color: var(--slate-400);">-</span>
+            {% endif %}
+          </td>
+          <td><b style="color: var(--slate-800);">{{ log.total_hours|floatformat:2 }} hrs</b></td>
+          <td>
+            {% if log.overtime_hours > 0 %}
+              <span style="color: var(--primary-600); font-weight: 700;">+{{ log.overtime_hours|floatformat:2 }}h</span>
+            {% else %}
+              <span style="color: var(--slate-400);">-</span>
+            {% endif %}
+          </td>
+          {% if is_admin %}
+          <td style="text-align: right;">
+            <a href="{% url 'adjust_attendance' log.id %}" class="btn btn-outline btn-sm" title="Adjust record">
+              <i class="fa-solid fa-pen"></i> Adjust
+            </a>
+          </td>
+          {% endif %}
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="{% if is_admin %}10{% else %}8{% endif %}" style="text-align: center; padding: 44px; color: var(--slate-400);">
+            <i class="fa-regular fa-folder-open" style="font-size: 36px; margin-bottom: 10px; display: block; opacity: 0.5;"></i>
+            No attendance records match your search criteria.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

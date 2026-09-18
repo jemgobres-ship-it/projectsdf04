@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block title %}Security Audit Trail{% endblock %}
+{% block page_title %}Security & System Audit Trail{% endblock %}
+{% block page_subtitle %}Tamper-evident logs of authentication events and timekeeping adjustments{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <h3>
+      <i class="fa-solid fa-shield-halved" style="color: var(--primary-600);"></i>
+      <span>Recent System Audit Telemetry (Last 100 Events)</span>
+    </h3>
+  </div>
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Timestamp (PST)</th>
+          <th>Actor / User</th>
+          <th>Action Type</th>
+          <th>Event Details</th>
+          <th>IP Address</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+        <tr>
+          <td>
+            <span style="font-family: var(--font-mono); font-size: 12px; color: var(--slate-600); font-weight: 500;">
+              {{ log.timestamp|date:"Y-m-d H:i:s" }}
+            </span>
+          </td>
+          <td>
+            {% if log.user %}
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="user-avatar" style="width: 28px; height: 28px; font-size: 11px;">
+                  {{ log.user.username|slice:":1"|upper }}
+                </div>
+                <b style="color: var(--slate-900);">{{ log.user.username }}</b>
+              </div>
+            {% else %}
+              <span style="color: var(--slate-400); font-style: italic;">System / Automated</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="badge badge-info" style="font-family: var(--font-mono); font-size: 11px; font-weight: 700;">
+              {{ log.action }}
+            </span>
+          </td>
+          <td style="font-size: 13px; color: var(--slate-700); max-width: 420px;">
+            {{ log.details }}
+          </td>
+          <td>
+            <span style="font-family: var(--font-mono); font-size: 11.5px; color: var(--slate-500); background: var(--slate-100); padding: 2px 7px; border-radius: 4px; border: 1px solid var(--border-default);">
+              {{ log.ip_address|default:"127.0.0.1" }}
+            </span>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" style="text-align: center; padding: 44px; color: var(--slate-400);">
+            <i class="fa-solid fa-shield-cat" style="font-size: 36px; margin-bottom: 10px; display: block; opacity: 0.5;"></i>
+            No audit records logged yet.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

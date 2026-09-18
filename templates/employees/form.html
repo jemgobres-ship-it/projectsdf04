@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if is_edit %}Edit Employee{% else %}Add New Employee{% endif %}{% endblock %}
+{% block page_title %}{% if is_edit %}Edit Employee Record{% else %}Enroll New Employee{% endif %}{% endblock %}
+{% block page_subtitle %}{% if is_edit %}Update details for {{ profile.full_name }} ({{ profile.employee_id }}){% else %}Register a new staff member into the attendance database{% endif %}{% endblock %}
+
+{% block content %}
+<div style="max-width: 840px; margin: 0 auto;">
+  <div class="card">
+    <div class="card-header">
+      <h3>
+        <i class="fa-solid {% if is_edit %}fa-user-pen{% else %}fa-user-plus{% endif %}" style="color: var(--primary-600);"></i>
+        <span>{% if is_edit %}Update Employee Information{% else %}New Employee Profile Form{% endif %}</span>
+      </h3>
+      <a href="{% url 'employee_list' %}" class="btn btn-outline btn-sm">
+        <i class="fa-solid fa-arrow-left"></i> Back to Directory
+      </a>
+    </div>
+
+    <div class="card-body">
+      <form method="POST">
+        {% csrf_token %}
+
+        <div style="font-weight: 700; font-size: 13.5px; font-family: var(--font-heading); color: var(--primary-800); border-bottom: 1px solid var(--border-default); padding-bottom: 8px; margin-bottom: 18px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-id-badge"></i>
+          <span>1. Account Credentials & Identification</span>
+        </div>
+
+        {% if not is_edit %}
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
+          <div class="form-group">
+            <label class="form-label">Employee ID *</label>
+            {{ form.employee_id }}
+            {% if form.employee_id.errors %}<span style="color: var(--danger-500); font-size: 12px;">{{ form.employee_id.errors }}</span>{% endif %}
+          </div>
+          <div class="form-group">
+            <label class="form-label">System Username *</label>
+            {{ form.username }}
+            {% if form.username.errors %}<span style="color: var(--danger-500); font-size: 12px;">{{ form.username.errors }}</span>{% endif %}
+          </div>
+        </div>
+        {% endif %}
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
+          <div class="form-group">
+            <label class="form-label">First Name *</label>
+            {{ form.first_name }}
+            {% if form.first_name.errors %}<span style="color: var(--danger-500); font-size: 12px;">{{ form.first_name.errors }}</span>{% endif %}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Last Name *</label>
+            {{ form.last_name }}
+            {% if form.last_name.errors %}<span style="color: var(--danger-500); font-size: 12px;">{{ form.last_name.errors }}</span>{% endif %}
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            {{ form.email }}
+            {% if form.email.errors %}<span style="color: var(--danger-500); font-size: 12px;">{{ form.email.errors }}</span>{% endif %}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Contact Number</label>
+            {{ form.contact_number }}
+            {% if form.contact_number.errors %}<span style="color: var(--danger-500); font-size: 12px;">{{ form.contact_number.errors }}</span>{% endif %}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">{% if is_edit %}Change Password (Optional){% else %}Account Password *{% endif %}</label>
+          {{ form.password }}
+          {% if form.password.errors %}<span style="color: var(--danger-500); font-size: 12px;">{{ form.password.errors }}</span>{% endif %}
+        </div>
+
+        <div style="font-weight: 700; font-size: 13.5px; font-family: var(--font-heading); color: var(--primary-800); border-bottom: 1px solid var(--border-default); padding-bottom: 8px; margin: 28px 0 18px 0; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-business-time"></i>
+          <span>2. Department & Work Shift Configuration</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
+          <div class="form-group">
+            <label class="form-label">Department Assignment</label>
+            {{ form.department }}
+            {% if form.department.errors %}<span style="color: var(--danger-500); font-size: 12px;">{{ form.department.errors }}</span>{% endif %}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Job Title / Role *</label>
+            {{ form.job_title }}
+            {% if form.job_title.errors %}<span style="color: var(--danger-500); font-size: 12px;">{{ form.job_title.errors }}</span>{% endif %}
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px;">
+          <div class="form-group">
+            <label class="form-label">Shift Start *</label>
+            {{ form.shift_start }}
+            {% if form.shift_start.errors %}<span style="color: var(--danger-500); font-size: 12px;">{{ form.shift_start.errors }}</span>{% endif %}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Shift End *</label>
+            {{ form.shift_end }}
+            {% if form.shift_end.errors %}<span style="color: var(--danger-500); font-size: 12px;">{{ form.shift_end.errors }}</span>{% endif %}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Grace Period (Mins)</label>
+            {{ form.grace_period_minutes }}
+            {% if form.grace_period_minutes.errors %}<span style="color: var(--danger-500); font-size: 12px;">{{ form.grace_period_minutes.errors }}</span>{% endif %}
+          </div>
+        </div>
+
+        {% if not is_edit %}
+        <div class="form-group">
+          <label class="form-label">Hire Date</label>
+          {{ form.hire_date }}
+          {% if form.hire_date.errors %}<span style="color: var(--danger-500); font-size: 12px;">{{ form.hire_date.errors }}</span>{% endif %}
+        </div>
+        {% else %}
+        <div class="form-group" style="display: flex; align-items: center; gap: 12px; margin-top: 14px; background: var(--slate-50); padding: 14px 18px; border-radius: var(--radius-md); border: 1px solid var(--border-default);">
+          {{ form.is_active }}
+          <div>
+            <label class="form-label" style="margin-bottom: 0; cursor: pointer;">Account Active & Enabled</label>
+            <div style="font-size: 12px; color: var(--slate-500);">Unchecking this disables user login and marks profile inactive.</div>
+          </div>
+        </div>
+        {% endif %}
+
+        <div style="display: flex; gap: 14px; margin-top: 32px;">
+          <button type="submit" class="btn btn-primary btn-lg">
+            <i class="fa-solid fa-floppy-disk"></i> {% if is_edit %}Update Employee Profile{% else %}Save & Enroll Employee{% endif %}
+          </button>
+          <a href="{% url 'employee_list' %}" class="btn btn-outline btn-lg">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,144 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Employee Attendance Management System{% endblock %} | AttendTrack Enterprise</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⏰</text></svg>">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- Sidebar Drawer Backdrop (Mobile) -->
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+    <!-- Sidebar Navigation -->
+    <aside class="app-sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">
+          <i class="fa-solid fa-user-clock"></i>
+        </div>
+        <div class="brand-text">
+          <h2>AttendTrack</h2>
+          <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i> Enterprise</div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">Overview</div>
+        <a href="{% url 'dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+          <span class="icon"><i class="fa-solid fa-gauge-high"></i></span>
+          <span>Dashboard</span>
+        </a>
+
+        <div class="nav-section-title">Timekeeping</div>
+        <a href="{% url 'clock_terminal' %}" class="nav-item {% if request.resolver_match.url_name == 'clock_terminal' %}active{% endif %}">
+          <span class="icon"><i class="fa-solid fa-fingerprint"></i></span>
+          <span>Clock In / Out</span>
+        </a>
+        <a href="{% url 'attendance_logs' %}" class="nav-item {% if request.resolver_match.url_name == 'attendance_logs' or request.resolver_match.url_name == 'adjust_attendance' %}active{% endif %}">
+          <span class="icon"><i class="fa-solid fa-calendar-check"></i></span>
+          <span>Attendance Master Log</span>
+        </a>
+
+        {% if request.user.is_staff or request.user.is_superuser %}
+        <div class="nav-section-title">HR Administration</div>
+        <a href="{% url 'employee_list' %}" class="nav-item {% if 'employee' in request.resolver_match.url_name %}active{% endif %}">
+          <span class="icon"><i class="fa-solid fa-users"></i></span>
+          <span>Employee Directory</span>
+        </a>
+        <a href="{% url 'reports_index' %}" class="nav-item {% if 'report' in request.resolver_match.url_name %}active{% endif %}">
+          <span class="icon"><i class="fa-solid fa-file-invoice"></i></span>
+          <span>Reports & DTR (PDF/CSV)</span>
+        </a>
+        <a href="{% url 'audit_logs' %}" class="nav-item {% if request.resolver_match.url_name == 'audit_logs' %}active{% endif %}">
+          <span class="icon"><i class="fa-solid fa-shield-halved"></i></span>
+          <span>Security Audit Trail</span>
+        </a>
+        <a href="/admin/" target="_blank" class="nav-item">
+          <span class="icon"><i class="fa-solid fa-screwdriver-wrench"></i></span>
+          <span>Django Admin <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 10px; margin-left: 4px; opacity: 0.7;"></i></span>
+        </a>
+        {% endif %}
+      </nav>
+
+      <div class="sidebar-user">
+        <div class="user-avatar">
+          {{ request.user.first_name|default:request.user.username|slice:":1"|upper }}
+          <span class="status-indicator"></span>
+        </div>
+        <div class="user-info">
+          <div class="user-name">{{ request.user.get_full_name|default:request.user.username }}</div>
+          <div class="user-role">
+            {% if request.user.is_staff or request.user.is_superuser %}
+              Administrator / HR
+            {% else %}
+              Staff / Employee
+            {% endif %}
+          </div>
+        </div>
+        <a href="{% url 'logout' %}" class="btn-logout" title="Sign Out">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Content Application Body -->
+    <main class="app-main">
+      <header class="app-topbar">
+        <div class="topbar-left">
+          <button class="sidebar-toggle-btn" id="sidebar-toggle" aria-label="Toggle Menu">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <div class="topbar-title">
+            <h1>{% block page_title %}Overview{% endblock %}</h1>
+            <p>{% block page_subtitle %}SDF04 - Object-Oriented Programming Attendance Management System{% endblock %}</p>
+          </div>
+        </div>
+
+        <div class="topbar-actions">
+          <div class="live-time-chip" title="Asia/Manila Server Synced">
+            <span class="pulse-dot"></span>
+            <span id="topbar-live-clock">--:--:-- --</span>
+          </div>
+          {% block topbar_actions %}{% endblock %}
+        </div>
+      </header>
+
+      <div class="content-body">
+        {% if messages %}
+        <div class="alert-container">
+          {% for message in messages %}
+          <div class="alert-box alert-{{ message.tags }}">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              {% if message.tags == 'success' %}
+                <i class="fa-solid fa-circle-check" style="color: var(--success-500); font-size: 16px;"></i>
+              {% elif message.tags == 'warning' %}
+                <i class="fa-solid fa-triangle-exclamation" style="color: var(--warning-500); font-size: 16px;"></i>
+              {% elif message.tags == 'error' %}
+                <i class="fa-solid fa-circle-xmark" style="color: var(--danger-500); font-size: 16px;"></i>
+              {% else %}
+                <i class="fa-solid fa-circle-info" style="color: var(--primary-500); font-size: 16px;"></i>
+              {% endif %}
+              <span>{{ message }}</span>
+            </div>
+            <button onclick="this.parentElement.remove()" style="background:none; border:none; cursor:pointer; color:inherit; opacity:0.5; padding: 4px;">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+  </div>
+
+  <script src="{% static 'js/timekeeper.js' %}"></script>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

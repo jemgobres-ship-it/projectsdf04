@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+
+{% block title %}Time Clock Terminal{% endblock %}
+{% block page_title %}Biometric Time Clock{% endblock %}
+{% block page_subtitle %}Official timestamped biometric & web timekeeping interface{% endblock %}
+
+{% block content %}
+<div style="max-width: 860px; margin: 0 auto;">
+  <!-- High-Tech Digital Clock Display Terminal -->
+  <div class="clock-display-card">
+    <div class="clock-date" id="big-terminal-date">Synchronizing server date...</div>
+    <div class="big-digital-clock" id="big-terminal-clock">--:--:-- --</div>
+    <div style="font-size: 13px; color: var(--slate-400); display: flex; align-items: center; justify-content: center; gap: 8px;">
+      <span class="pulse-dot"></span>
+      <span>Philippine Standard Time (PST • Asia/Manila) Server Synchronized</span>
+    </div>
+
+    <!-- Action Punch Buttons Row -->
+    <div class="clock-actions-row">
+      <!-- Time In Form -->
+      <form method="POST" id="clock-in-form">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="time_in">
+        <button type="submit" class="btn-clock-in {% if today_log and today_log.time_in %}btn-disabled{% endif %}"
+                {% if today_log and today_log.time_in %}disabled{% endif %}>
+          <i class="fa-solid fa-fingerprint" style="font-size: 20px;"></i>
+          <span>{% if today_log and today_log.time_in %}TIME-IN RECORDED{% else %}RECORD TIME IN{% endif %}</span>
+        </button>
+      </form>
+
+      <!-- Time Out Form -->
+      <form method="POST" id="clock-out-form">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="time_out">
+        <button type="submit" class="btn-clock-out {% if not today_log or not today_log.time_in or today_log.time_out %}btn-disabled{% endif %}"
+                {% if not today_log or not today_log.time_in or today_log.time_out %}disabled{% endif %}>
+          <i class="fa-solid fa-right-from-bracket" style="font-size: 20px;"></i>
+          <span>{% if today_log and today_log.time_out %}TIME-OUT RECORDED{% else %}RECORD TIME OUT{% endif %}</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Today's Status Information Card -->
+  <div class="card">
+    <div class="card-header">
+      <h3>
+        <i class="fa-solid fa-id-card-clip" style="color: var(--primary-600);"></i>
+        <span>Shift & Live Session Context</span>
+      </h3>
+    </div>
+    <div class="card-body">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; margin-bottom: 24px;">
+        <div style="background: var(--slate-50); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-default);">
+          <div style="font-size: 11px; color: var(--slate-500); font-weight: 700; text-transform: uppercase; font-family: var(--font-heading);">Enrolled Staff</div>
+          <div style="font-size: 15px; font-weight: 700; color: var(--slate-900); margin-top: 4px;">{{ profile.full_name }}</div>
+          <div style="font-size: 12px; color: var(--slate-500); font-family: var(--font-mono); margin-top: 2px;">{{ profile.employee_id }}</div>
+        </div>
+
+        <div style="background: var(--slate-50); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-default);">
+          <div style="font-size: 11px; color: var(--slate-500); font-weight: 700; text-transform: uppercase; font-family: var(--font-heading);">Scheduled Shift</div>
+          <div style="font-size: 15px; font-weight: 700; color: var(--primary-600); margin-top: 4px;">
+            {{ profile.shift_start|time:"g:i A" }} - {{ profile.shift_end|time:"g:i A" }}
+          </div>
+          <div style="font-size: 12px; color: var(--slate-500); margin-top: 2px;">Grace: <b>{{ profile.grace_period_minutes }} mins</b></div>
+        </div>
+
+        <div style="background: var(--slate-50); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-default);">
+          <div style="font-size: 11px; color: var(--slate-500); font-weight: 700; text-transform: uppercase; font-family: var(--font-heading);">Today's Time-In</div>
+          <div style="font-size: 15px; font-weight: 700; color: var(--success-600); margin-top: 4px;">
+            {% if today_log and today_log.time_in %}
+              {{ today_log.formatted_time_in }}
+            {% else %}
+              <span style="color: var(--slate-400); font-weight: 500;">Not Recorded</span>
+            {% endif %}
+          </div>
+          {% if today_log and today_log.late_minutes > 0 %}
+            <div style="font-size: 11.5px; color: var(--danger-600); font-weight: 700; margin-top: 2px;">
+              <i class="fa-solid fa-triangle-exclamation"></i> Late: +{{ today_log.late_minutes }}m
+            </div>
+          {% elif today_log and today_log.time_in %}
+            <div style="font-size: 11.5px; color: var(--success-600); font-weight: 600; margin-top: 2px;">
+              <i class="fa-solid fa-check"></i> On-Time
+            </div>
+          {% endif %}
+        </div>
+
+        <div style="background: var(--slate-50); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-default);">
+          <div style="font-size: 11px; color: var(--slate-500); font-weight: 700; text-transform: uppercase; font-family: var(--font-heading);">Today's Time-Out</div>
+          <div style="font-size: 15px; font-weight: 700; color: var(--danger-600); margin-top: 4px;">
+            {% if today_log and today_log.time_out %}
+              {{ today_log.formatted_time_out }}
+            {% else %}
+              <span style="color: var(--slate-400); font-weight: 500;">Not Recorded</span>
+            {% endif %}
+          </div>
+          {% if today_log and today_log.total_hours > 0 %}
+            <div style="font-size: 11.5px; color: var(--primary-600); font-weight: 700; margin-top: 2px;">
+              <i class="fa-solid fa-clock"></i> Rendered: {{ today_log.total_hours|floatformat:2 }} hrs
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div style="border-top: 1px solid var(--border-default); padding-top: 16px; display: flex; justify-content: space-between; font-size: 12.5px; color: var(--slate-500); flex-wrap: wrap; gap: 8px;">
+        <span><i class="fa-solid fa-location-dot" style="color: var(--primary-500);"></i> Logged Terminal: <b>127.0.0.1</b></span>
+        <span><i class="fa-solid fa-shield-check" style="color: var(--success-500);"></i> Encrypted Session & CSRF Protected</span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

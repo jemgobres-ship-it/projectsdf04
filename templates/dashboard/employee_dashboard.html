@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+
+{% block title %}Employee Self-Service Portal{% endblock %}
+{% block page_title %}Welcome, {{ data.employee.full_name }}!{% endblock %}
+{% block page_subtitle %}Employee ID: {{ data.employee.employee_id }} • {{ data.employee.department.name|default:"General Staff" }} • Assigned Shift: {{ data.shift_start_display }} - {{ data.shift_end_display }}{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'clock_terminal' %}" class="btn btn-primary btn-sm">
+  <i class="fa-solid fa-fingerprint"></i> Biometric Clock
+</a>
+<a href="{% url 'export_pdf_dtr' %}" class="btn btn-outline btn-sm">
+  <i class="fa-solid fa-file-pdf" style="color: var(--danger-500);"></i> Download My DTR
+</a>
+{% endblock %}
+
+{% block content %}
+<!-- Today's Attendance Hero Status Card -->
+<div class="card" style="border-left: 5px solid var(--primary-600); margin-bottom: 26px;">
+  <div class="card-body" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+    <div>
+      <div style="font-size: 11.5px; text-transform: uppercase; color: var(--slate-500); font-weight: 700; font-family: var(--font-heading); letter-spacing: 0.05em;">
+        Live Attendance State
+      </div>
+      <div style="font-size: 20px; font-weight: 800; font-family: var(--font-heading); margin-top: 5px;">
+        {% if not data.today_log %}
+          <span style="color: var(--slate-500); display: flex; align-items: center; gap: 8px;">
+            <i class="fa-regular fa-circle-question" style="color: var(--slate-400);"></i> Not Clocked In Yet
+          </span>
+        {% elif data.today_log.is_clocked_in %}
+          <span style="color: var(--success-600); display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-circle-check"></i> Clocked In at {{ data.today_log.formatted_time_in }}
+          </span>
+        {% elif data.today_log.is_clocked_out %}
+          <span style="color: var(--primary-600); display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-check-double"></i> Shift Completed (In: {{ data.today_log.formatted_time_in }} | Out: {{ data.today_log.formatted_time_out }})
+          </span>
+        {% endif %}
+      </div>
+      <div style="font-size: 12.5px; color: var(--slate-400); margin-top: 4px;">
+        Session Date: <b>{{ data.today_date }}</b>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 12px;">
+      {% if not data.today_log %}
+        <form method="POST" action="{% url 'clock_terminal' %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="time_in">
+          <button type="submit" class="btn btn-success btn-lg">
+            <i class="fa-solid fa-fingerprint"></i> Clock In Now
+          </button>
+        </form>
+      {% elif data.today_log.is_clocked_in %}
+        <form method="POST" action="{% url 'clock_terminal' %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="time_out">
+          <button type="submit" class="btn btn-danger btn-lg">
+            <i class="fa-solid fa-right-from-bracket"></i> Clock Out Now
+          </button>
+        </form>
+      {% else %}
+        <button class="btn btn-outline btn-lg" disabled style="cursor: not-allowed; opacity: 0.7;">
+          <i class="fa-solid fa-circle-check" style="color: var(--success-500);"></i> Shift Completed
+        </button>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Monthly Personal Performance Metrics -->
+<div class="kpi-grid">
+  <div class="kpi-card kpi-green">
+    <div class="kpi-details">
+      <div class="kpi-label">Days Present (Month)</div>
+      <div class="kpi-value">{{ data.monthly_present }}</div>
+      <div class="kpi-sub">On-time attendances</div>
+    </div>
+    <div class="kpi-icon icon-green">
+      <i class="fa-solid fa-calendar-check"></i>
+    </div>
+  </div>
+
+  <div class="kpi-card kpi-amber">
+    <div class="kpi-details">
+      <div class="kpi-label">Tardy Occurrences</div>
+      <div class="kpi-value">{{ data.monthly_late }}</div>
+      <div class="kpi-sub">Arrivals past grace limit</div>
+    </div>
+    <div class="kpi-icon icon-amber">
+      <i class="fa-solid fa-clock-rotate-left"></i>
+    </div>
+  </div>
+
+  <div class="kpi-card kpi-blue">
+    <div class="kpi-details">
+      <div class="kpi-label">Rendered Hours</div>
+      <div class="kpi-value">{{ data.monthly_hours }} <span style="font-size: 14px; font-weight: normal; color: var(--slate-400);">hrs</span></div>
+      <div class="kpi-sub">Net working duration</div>
+    </div>
+    <div class="kpi-icon icon-blue">
+      <i class="fa-solid fa-business-time"></i>
+    </div>
+  </div>
+
+  <div class="kpi-card kpi-blue">
+    <div class="kpi-details">
+      <div class="kpi-label">Overtime Hours</div>
+      <div class="kpi-value">{{ data.monthly_ot }} <span style="font-size: 14px; font-weight: normal; color: var(--slate-400);">hrs</span></div>
+      <div class="kpi-sub">Credited extra time</div>
+    </div>
+    <div class="kpi-icon icon-blue">
+      <i class="fa-solid fa-hourglass-half"></i>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Personal Attendance History -->
+<div class="card">
+  <div class="card-header">
+    <h3>
+      <i class="fa-solid fa-clock-rotate-left" style="color: var(--primary-600);"></i>
+      <span>My Recent Attendance History</span>
+    </h3>
+    <a href="{% url 'attendance_logs' %}" class="btn btn-outline btn-sm">Full History</a>
+  </div>
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Time In</th>
+          <th>Time Out</th>
+          <th>Status</th>
+          <th>Tardiness</th>
+          <th>Hours Worked</th>
+          <th>Overtime</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in data.recent_logs %}
+        <tr>
+          <td><b style="color: var(--slate-900);">{{ log.formatted_date }}</b></td>
+          <td><span style="font-family: var(--font-mono); font-weight: 600;">{{ log.formatted_time_in }}</span></td>
+          <td><span style="font-family: var(--font-mono);">{{ log.formatted_time_out }}</span></td>
+          <td>
+            <span class="badge {{ log.status_badge_class }}">
+              <span class="badge-dot"></span>
+              {{ log.status }}
+            </span>
+          </td>
+          <td>
+            {% if log.late_minutes > 0 %}
+              <span style="color: var(--danger-600); font-weight: 700; font-size: 12.5px;">+{{ log.late_minutes }} mins</span>
+            {% else %}
+              <span style="color: var(--slate-400);">-</span>
+            {% endif %}
+          </td>
+          <td><b>{{ log.total_hours|floatformat:2 }} hrs</b></td>
+          <td>
+            {% if log.overtime_hours > 0 %}
+              <span style="color: var(--primary-600); font-weight: 700;">+{{ log.overtime_hours|floatformat:2 }} hrs</span>
+            {% else %}
+              <span style="color: var(--slate-400);">-</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" style="text-align: center; padding: 36px; color: var(--slate-400);">
+            <i class="fa-regular fa-folder-open" style="font-size: 32px; margin-bottom: 8px; display: block; opacity: 0.5;"></i>
+            No recent attendance records found.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

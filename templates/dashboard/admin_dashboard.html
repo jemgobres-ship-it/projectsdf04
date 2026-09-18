@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+
+{% block title %}Executive HR Dashboard{% endblock %}
+{% block page_title %}Executive Dashboard{% endblock %}
+{% block page_subtitle %}Workforce attendance analytics and live timekeeping telemetry for {{ dashboard.formatted_today }}{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'employee_create' %}" class="btn btn-primary btn-sm">
+  <i class="fa-solid fa-user-plus"></i> Add Employee
+</a>
+<a href="{% url 'reports_index' %}" class="btn btn-outline btn-sm">
+  <i class="fa-solid fa-file-export"></i> Reports Center
+</a>
+{% endblock %}
+
+{% block content %}
+<!-- KPI Metrics Grid -->
+<div class="kpi-grid">
+  <div class="kpi-card kpi-blue">
+    <div class="kpi-details">
+      <div class="kpi-label">Active Staff</div>
+      <div class="kpi-value">{{ dashboard.total_employees }}</div>
+      <div class="kpi-sub">Enrolled company staff</div>
+    </div>
+    <div class="kpi-icon icon-blue">
+      <i class="fa-solid fa-users"></i>
+    </div>
+  </div>
+
+  <div class="kpi-card kpi-green">
+    <div class="kpi-details">
+      <div class="kpi-label">Present (On-Time)</div>
+      <div class="kpi-value">{{ dashboard.present_count }}</div>
+      <div class="kpi-sub">Within shift & grace period</div>
+    </div>
+    <div class="kpi-icon icon-green">
+      <i class="fa-solid fa-user-check"></i>
+    </div>
+  </div>
+
+  <div class="kpi-card kpi-amber">
+    <div class="kpi-details">
+      <div class="kpi-label">Late Arrivals</div>
+      <div class="kpi-value">{{ dashboard.late_count }}</div>
+      <div class="kpi-sub">Past shift grace period</div>
+    </div>
+    <div class="kpi-icon icon-amber">
+      <i class="fa-solid fa-user-clock"></i>
+    </div>
+  </div>
+
+  <div class="kpi-card kpi-red">
+    <div class="kpi-details">
+      <div class="kpi-label">Absent / Unaccounted</div>
+      <div class="kpi-value">{{ dashboard.absent_count }}</div>
+      <div class="kpi-sub">No Time-In recorded today</div>
+    </div>
+    <div class="kpi-icon icon-red">
+      <i class="fa-solid fa-user-xmark"></i>
+    </div>
+  </div>
+</div>
+
+<!-- Attendance Turnout Rate Meter Card -->
+<div class="card" style="margin-bottom: 28px;">
+  <div class="card-body" style="padding: 20px 26px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+      <div>
+        <span style="font-weight: 700; font-family: var(--font-heading); font-size: 14px; color: var(--slate-900);">Today's Overall Attendance Turnout</span>
+        <span style="font-size: 12px; color: var(--slate-500); margin-left: 8px;">({{ dashboard.present_count|add:dashboard.late_count }} of {{ dashboard.total_employees }} staff clocked in)</span>
+      </div>
+      <span style="font-weight: 800; font-family: var(--font-heading); font-size: 18px; color: var(--primary-600);">{{ dashboard.attendance_rate }}%</span>
+    </div>
+    <div style="width: 100%; height: 10px; background: var(--slate-100); border-radius: 9999px; overflow: hidden; border: 1px solid var(--border-default);">
+      <div style="width: {{ dashboard.attendance_rate }}%; height: 100%; background: linear-gradient(90deg, #3b82f6, #10b981); border-radius: 9999px; transition: width 0.8s ease;"></div>
+    </div>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+  <!-- Live Attendance Activity Stream -->
+  <div class="card">
+    <div class="card-header">
+      <h3>
+        <i class="fa-solid fa-bolt" style="color: var(--warning-500);"></i>
+        <span>Recent Timekeeping Activity</span>
+      </h3>
+      <a href="{% url 'attendance_logs' %}" class="btn btn-outline btn-sm">View All Records</a>
+    </div>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Staff Member</th>
+            <th>Department</th>
+            <th>Time In</th>
+            <th>Time Out</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in dashboard.recent_logs %}
+          <tr>
+            <td>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div class="user-avatar" style="width: 32px; height: 32px; font-size: 11px;">
+                  {{ log.employee_name|slice:":1"|upper }}
+                </div>
+                <div>
+                  <div style="font-weight: 600; color: var(--slate-900);">{{ log.employee_name }}</div>
+                  <div style="font-size: 11px; color: var(--slate-400); font-family: var(--font-mono);">{{ log.employee_id }}</div>
+                </div>
+              </div>
+            </td>
+            <td><span style="font-size: 12.5px; color: var(--slate-600);">{{ log.department }}</span></td>
+            <td><span style="font-weight: 700; font-family: var(--font-mono); color: var(--slate-800);">{{ log.formatted_time_in }}</span></td>
+            <td><span style="font-family: var(--font-mono); color: var(--slate-600);">{{ log.formatted_time_out }}</span></td>
+            <td>
+              <span class="badge {{ log.status_badge_class }}">
+                <span class="badge-dot"></span>
+                {{ log.status }}
+              </span>
+              {% if log.late_minutes > 0 %}
+                <span style="font-size: 11px; color: var(--warning-700); font-weight: 600; display: block; margin-top: 2px;">
+                  +{{ log.late_minutes }}m late
+                </span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="{% url 'adjust_attendance' log.id %}" class="btn btn-outline btn-sm" title="Adjust record">
+                <i class="fa-solid fa-pen-to-square"></i> Adjust
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" style="text-align: center; padding: 36px; color: var(--slate-400);">
+              <i class="fa-regular fa-clock" style="font-size: 32px; margin-bottom: 8px; display: block; opacity: 0.5;"></i>
+              No attendance activity recorded for today yet.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Department Turnout Breakdown -->
+  <div class="card">
+    <div class="card-header">
+      <h3>
+        <i class="fa-solid fa-building" style="color: var(--primary-600);"></i>
+        <span>Department Turnout</span>
+      </h3>
+    </div>
+    <div class="card-body" style="padding: 18px 22px;">
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        {% for dept in dashboard.dept_breakdown %}
+        <div style="border-bottom: 1px solid var(--slate-100); padding-bottom: 12px;">
+          <div style="display: flex; justify-content: space-between; font-size: 13.5px; font-weight: 600; margin-bottom: 5px;">
+            <span style="color: var(--slate-800);">{{ dept.name }}</span>
+            <span style="color: var(--primary-600); font-family: var(--font-mono); font-size: 12.5px;">{{ dept.present }} / {{ dept.total }}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="flex-grow: 1; height: 6px; background: var(--slate-100); border-radius: 999px; margin-right: 12px; overflow: hidden; border: 1px solid var(--border-default);">
+              <div style="width: {{ dept.rate }}%; height: 100%; background: linear-gradient(90deg, #3b82f6, #60a5fa); border-radius: 999px;"></div>
+            </div>
+            <span style="font-size: 11.5px; color: var(--slate-500); font-weight: 700; font-family: var(--font-mono);">{{ dept.rate }}%</span>
+          </div>
+        </div>
+        {% empty %}
+        <p style="color: var(--slate-400); font-size: 13px;">No departments configured.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

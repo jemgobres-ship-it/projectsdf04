@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}Confirm Deletion{% endblock %}
+{% block page_title %}Delete Employee Record{% endblock %}
+{% block page_subtitle %}Safety verification before removing staff record{% endblock %}
+
+{% block content %}
+<div style="max-width: 540px; margin: 40px auto;">
+  <div class="card" style="border-top: 5px solid var(--danger-500); box-shadow: var(--shadow-xl);">
+    <div class="card-body" style="padding: 36px 28px; text-align: center;">
+      <div style="width: 64px; height: 64px; border-radius: 50%; background: var(--danger-50); color: var(--danger-500); display: inline-flex; align-items: center; justify-content: center; font-size: 28px; margin-bottom: 20px;">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <h2 style="font-family: var(--font-heading); font-size: 19px; font-weight: 800; margin-bottom: 10px; color: var(--slate-900);">
+        Confirm Employee Removal
+      </h2>
+      <p style="color: var(--slate-600); font-size: 14px; margin-bottom: 24px; line-height: 1.6;">
+        You are about to permanently delete <b>{{ profile.full_name }}</b> (Employee ID: <code style="font-family: var(--font-mono); background: var(--slate-100); padding: 2px 6px; border-radius: 4px;">{{ profile.employee_id }}</code>). This action removes their login credentials and employee profile.
+      </p>
+
+      <form method="POST">
+        {% csrf_token %}
+        <div style="display: flex; justify-content: center; gap: 12px;">
+          <button type="submit" class="btn btn-danger btn-lg">
+            <i class="fa-solid fa-trash-can"></i> Yes, Delete Record
+          </button>
+          <a href="{% url 'employee_list' %}" class="btn btn-outline btn-lg">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+
+{% block title %}Reports & DTR Generator{% endblock %}
+{% block page_title %}Reports & Analytics Center{% endblock %}
+{% block page_subtitle %}Generate attendance summaries and export official DTR documents via Pandas and ReportLab{% endblock %}
+
+{% block content %}
+<!-- Parameter Toolbar Card -->
+<div class="card" style="margin-bottom: 24px;">
+  <div class="card-header">
+    <h3>
+      <i class="fa-solid fa-sliders" style="color: var(--primary-600);"></i>
+      <span>Report Parameters & Filter Criteria</span>
+    </h3>
+  </div>
+  <div class="card-body" style="padding: 20px 24px;">
+    <form method="GET" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; align-items: flex-end;">
+      <div>
+        <label class="form-label" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;">Start Date</label>
+        {{ form.start_date }}
+      </div>
+
+      <div>
+        <label class="form-label" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;">End Date</label>
+        {{ form.end_date }}
+      </div>
+
+      {% if is_admin %}
+      <div>
+        <label class="form-label" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;">Department</label>
+        {{ form.department }}
+      </div>
+
+      <div>
+        <label class="form-label" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;">Status</label>
+        {{ form.status }}
+      </div>
+      {% endif %}
+
+      <div style="display: flex; gap: 8px;">
+        <button type="submit" class="btn btn-primary" style="flex: 1;">
+          <i class="fa-solid fa-rotate"></i> Update Preview
+        </button>
+        <a href="{% url 'reports_index' %}" class="btn btn-outline">Reset</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Aggregated Summary Metrics Grid -->
+<div class="kpi-grid">
+  <div class="kpi-card kpi-blue">
+    <div class="kpi-details">
+      <div class="kpi-label">Filtered Entries</div>
+      <div class="kpi-value">{{ total_count }}</div>
+      <div class="kpi-sub">Total matched logs</div>
+    </div>
+    <div class="kpi-icon icon-blue">
+      <i class="fa-solid fa-list-ol"></i>
+    </div>
+  </div>
+
+  <div class="kpi-card kpi-green">
+    <div class="kpi-details">
+      <div class="kpi-label">Productive Hours</div>
+      <div class="kpi-value">{{ total_hours }} <span style="font-size: 14px; font-weight: normal; color: var(--slate-400);">hrs</span></div>
+      <div class="kpi-sub">Net rendered work</div>
+    </div>
+    <div class="kpi-icon icon-green">
+      <i class="fa-solid fa-business-time"></i>
+    </div>
+  </div>
+
+  <div class="kpi-card kpi-amber">
+    <div class="kpi-details">
+      <div class="kpi-label">Cumulative Late</div>
+      <div class="kpi-value">{{ total_late }} <span style="font-size: 14px; font-weight: normal; color: var(--slate-400);">mins</span></div>
+      <div class="kpi-sub">Total tardy duration</div>
+    </div>
+    <div class="kpi-icon icon-amber">
+      <i class="fa-solid fa-clock-rotate-left"></i>
+    </div>
+  </div>
+
+  <div class="kpi-card kpi-blue">
+    <div class="kpi-details">
+      <div class="kpi-label">Total Overtime</div>
+      <div class="kpi-value">{{ total_ot }} <span style="font-size: 14px; font-weight: normal; color: var(--slate-400);">hrs</span></div>
+      <div class="kpi-sub">Extra hours credited</div>
+    </div>
+    <div class="kpi-icon icon-blue">
+      <i class="fa-solid fa-hourglass-half"></i>
+    </div>
+  </div>
+</div>
+
+<!-- Export Action Banner Card -->
+<div class="card" style="background: linear-gradient(135deg, #090d16 0%, #0f172a 60%, #1e293b 100%); color: white; border: 1px solid rgba(255, 255, 255, 0.08); margin-bottom: 28px;">
+  <div class="card-body" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; padding: 26px 30px;">
+    <div>
+      <h3 style="font-family: var(--font-heading); font-size: 18px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 10px;">
+        <i class="fa-solid fa-file-arrow-down" style="color: var(--primary-400);"></i>
+        Export Official Attendance Documents
+      </h3>
+      <p style="font-size: 13px; color: var(--slate-400); margin-top: 4px;">
+        Formatted according to academic and corporate specifications using Pandas and ReportLab.
+      </p>
+    </div>
+    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+      <a href="{% url 'export_csv' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-lg">
+        <i class="fa-solid fa-file-csv"></i> Download CSV (Pandas)
+      </a>
+      <a href="{% url 'export_pdf_dtr' %}?{{ request.GET.urlencode }}" class="btn btn-danger btn-lg" target="_blank">
+        <i class="fa-solid fa-file-pdf"></i> Download DTR (ReportLab PDF)
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Data Preview Table Card -->
+<div class="card">
+  <div class="card-header">
+    <h3>
+      <i class="fa-solid fa-table" style="color: var(--primary-600);"></i>
+      <span>Data Preview (Displaying top {{ records|length }} records)</span>
+    </h3>
+  </div>
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Department</th>
+          <th>Date</th>
+          <th>Time In</th>
+          <th>Time Out</th>
+          <th>Status</th>
+          <th>Late</th>
+          <th>Hours</th>
+          <th>OT</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in records %}
+        <tr>
+          <td>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div class="user-avatar" style="width: 30px; height: 30px; font-size: 11px;">
+                {{ r.employee.full_name|slice:":1"|upper }}
+              </div>
+              <div>
+                <div style="font-weight: 600; color: var(--slate-900);">{{ r.employee.full_name }}</div>
+                <div style="font-size: 11px; color: var(--slate-400); font-family: var(--font-mono);">{{ r.employee.employee_id }}</div>
+              </div>
+            </div>
+          </td>
+          <td><span style="color: var(--slate-600);">{{ r.employee.department.name|default:"Unassigned" }}</span></td>
+          <td><b style="color: var(--slate-900);">{{ r.date|date:"M d, Y" }}</b></td>
+          <td><span style="font-family: var(--font-mono); font-weight: 600;">{{ r.time_in|time:"h:i A"|default:"--:--" }}</span></td>
+          <td><span style="font-family: var(--font-mono);">{{ r.time_out|time:"h:i A"|default:"--:--" }}</span></td>
+          <td><span class="badge badge-secondary"><span class="badge-dot"></span> {{ r.get_status_display }}</span></td>
+          <td>
+            {% if r.late_minutes > 0 %}
+              <span style="color: var(--danger-600); font-weight: 700;">{{ r.late_minutes }}m</span>
+            {% else %}
+              <span style="color: var(--slate-400);">-</span>
+            {% endif %}
+          </td>
+          <td><b style="color: var(--slate-800);">{{ r.total_hours|floatformat:2 }} hrs</b></td>
+          <td>
+            {% if r.overtime_hours > 0 %}
+              <span style="color: var(--primary-600); font-weight: 700;">+{{ r.overtime_hours|floatformat:2 }}h</span>
+            {% else %}
+              <span style="color: var(--slate-400);">-</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="9" style="text-align: center; padding: 44px; color: var(--slate-400);">
+            <i class="fa-regular fa-folder-open" style="font-size: 36px; margin-bottom: 10px; display: block; opacity: 0.5;"></i>
+            No attendance records found for this period.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
